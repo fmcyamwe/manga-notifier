@@ -1,0 +1,57 @@
+{
+    "author": "Point Blank",
+    "version": "1.4",
+    "background": {
+        "page": "background.html",
+        "persistent": true
+    },
+    "applications": {
+        "gecko": {
+            "id": "{91b8ebd6-a262-4f4d-a290-a1b91f891dc2}",
+            "strict_min_version": "48.0"
+        }
+    },
+    "browser_action": {
+        "default_icon": {
+            "48": "icons/manga-48.png"
+        },
+        "default_title": "Manga Notifierzz",
+        "default_popup": "popup/choose_interval.html"
+    },
+    "content_scripts": [{
+        "matches": [
+            "<all_urls>"
+        ],
+        "js": [
+            "content_scripts/manga.js"
+        ]
+    }],
+    "description": "Notifies you when a new manga is released.",
+    "homepage_url": "https://github.com/Nischay-Pro/manga-notifier",
+    "icons": {
+        "48": "icons/manga-48.png",
+        "96": "icons/manga-96.png"
+    },
+    "manifest_version": 2,
+    "name": "Manga Notifier",
+    "options_page": "options/options.html",
+    "permissions": [
+        "unlimitedStorage",
+        "notifications",
+        "storage",
+        "*://mangafox.la/*",
+        "*://readms.net/*",
+        "*://mangafox.me/*",
+        "*://mangastream.com/*",
+        "webRequest",
+        "activeTab",
+        "tabs"
+    ],
+    "web_accessible_resources": [
+        "options/options.html"
+    ],
+    "-ms-preload": {
+        "backgroundScript": "backgroundScriptsAPIBridge.js",
+        "contentScript": "contentScriptsAPIBridge.js"
+    }
+}

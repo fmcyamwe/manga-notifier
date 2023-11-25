@@ -1,0 +1,72 @@
+html,
+body,
+div {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+body {
+  line-height: 1;
+  selection: none;
+  cursor: default;
+  direction: ltr;
+  overflow: hidden;
+  width: 300px;
+  font-family: 'Segoe UI', Tahoma, helvetica, sans-serif;
+}
+.area-header_active:hover, .area-expandable:hover, .area-expandable_expanded:hover {background-color:#F5F5F5;}
+
+.area-header {
+  padding: 15px 15px 15px 20px;
+}
+
+.area-title {
+  font-size: 1em;
+  font-weight: 600;
+  float: left;
+  margin: 0 0 0 10px;
+  line-height: 150%;
+}
+
+.area-icon {
+  width: 24px;
+  height: 24px;
+  float: left;
+}
+
+.area-text {
+  line-height: 115%;
+  font-size: 0.7em;
+  margin-bottom: 5px;
+  color: #818E93;
+}
+
+.area-textSmall {
+  font-size: 0.75em;
+  color: #818E93;
+  line-height: 115%;
+}
+
+.area-headerDetails {
+  margin: 5px 0px 0px 35px;
+}
+
+.material-setting {
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAQAAABKfvVzAAABCUlEQVR4AcXSP0oDURDH8e/u2vmnFRFPIQqeQgTRwqCIN7AwINiIIJJsIQTEQhBT6Am0UAQttLGWJZWEoHgCV7L6BBmG2QdhX5fPr/vNTALLYyh2cZIdglzpQZsgL3rwzEAxT9yyzAxtfvSg4JxpVrjjkYiSLVn5xWnKzTrGBJ+4irwzhjryhq80aJJ57QGqRm4Gx8QAJLRM+8Uqxhxd/fUYQaL/8sYsnj0ZNbBSaesw6KAZdrBAT0YZCYIROtJ2mcfY4BunaZHI+olpc9ZQh94HzEhJ6XjtPmqcD1xFeoxibFY+jRolEQ9cs8gUZxS63OeUSZa44Z4o/HlXutSDC4LUKf7TZ5sh+AObx91kL015YwAAAABJRU5ErkJggg==") top left no-repeat;
+}
+
+.material-add {
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAQAAABKfvVzAAAAHUlEQVR4AWNAgFHwHwhHNWBVhBtSqgETjMbDKAAA6iwzzdTyG+0AAAAASUVORK5CYII=");
+}
+
+.material-done {
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAQAAABKfvVzAAAASUlEQVR4AWPADUaBFmnKQxh+MzSQpvw/Q8PwU87KsIohkBTTI4CSvxiCSHAMUPI/UFEQunLCWoLRlBPWglBOpBaYcqK1YCgfBQDw0y1mS9NLDAAAAABJRU5ErkJggg==');
+}
+
+.material-remove {
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAQAAABKfvVzAAAAGElEQVR4AWMgDEbBKPiPG1KqAROMglEAAAoWG+UEvH49AAAAAElFTkSuQmCC');
+}

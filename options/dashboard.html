@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/buttons-min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link href="../css/icon.css" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="../css/materialize.min.css" media="screen,projection" />
+    <link href="../css/ghpages-materialize.css" rel="stylesheet">
+    <style>
+        .select2 {
+            width: 100%!important;
+        }
+
+        ul.side-nav.fixed li.logo {
+            margin-bottom: 40px!important;
+        }
+
+        .chips .input {
+            width: 100% !important;
+        }
+    </style>
+</head>
+
+<body class="themes">
+    <header>
+        <div class="fixed-announcement">
+            <div class="announcement">
+                <div class="container">Contribute to developing Manga Notifier. Code
+                    is freely available and open-sourced on <a href="https://github.com/Nischay-Pro/manga-notifier">Github</a>.</div>
+            </div>
+        </div>
+        <nav class="top-nav">
+            <div class="container">
+                <div class="nav-wrapper"><a class="page-title">Manga Notifier</a></div>
+            </div>
+        </nav>
+        <div class="container"><a href="#" data-activates="nav-mobile" class="button-collapse top-nav full hide-on-large-only"><i class="material-icons">menu</i></a></div>
+        <ul id="nav-mobile" class="side-nav fixed">
+            <li class="logo"><a id="logo-container" href="/" class="brand-logo"> <object id="front-page-logo" type="image/svg+xml" data="../icons/book.svg">Your browser does not support SVG</object></a>
+                <h5>Manga Notifier</h5>
+            </li>
+            <li>
+                <div class="divider"></div>
+            </li>
+            <li class="bold active"><a href="dashboard.html" class="waves-effect waves-teal">Settings</a></li>
+            <li class="bold"><a href="about.html" class="waves-effect waves-teal">About</a></li>
+        </ul>
+    </header>
+    <main>
+        <div class="container">
+            <div class="row themes-section">
+                <form class="col s12" action="#">
+                    <h3>Settings</h3>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <h5>Synchronous Frequency</h5>
+                            <p class="caption">Set your synchronous frequency. The plugin will scan for new manga releases based on the frequency
+                                interval you have defined.</p>
+                            <h6 id="frequencynot">Current Frequency for checking: 1 hour(s)</h6><br>
+                            <select class="js-example-basic-single" id="interval" name="interval">
+                                        <option value="1">1 hour            </option>
+                                        <option value="4">4 hours           </option>
+                                        <option value="8">8 hours           </option>
+                                        <option value="16">16 hours         </option>
+                                        <option value="24">24 hours (1 day) </option>
+                            </select>
+                        </div>
+                        <div class="input-field col s12">
+                            <h5>Manga Track</h5>
+                            <p class="caption">To add manga to track, just enter your manga url and press enter. You can delete them by clicking
+                                on the close icon or by using your delete button.</p>
+                            <div class="chips" id="chips"></div>
+                        </div>
+                        <div class="col s12">
+                            <h5>Debug Mode</h5>
+                            <p class="caption">Enable debug mode to increase verbosity.</p>
+                            <div class="switch"> <label> Off <input type="checkbox" id="debug" name="debug"> <span class="lever"></span> On </label>                                </div>
+                        </div>
+                        <div class="input-field col s12">
+                            <button class="btn waves-effect waves-light" type="submit" name="action">Save<i class="material-icons right">send</i></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    <script src="../libs/jquery-3.3.1.min.js"></script>
+    <script src="../libs/select2.min.js"></script>
+    <script type="text/javascript" src="../libs/materialize.min.js"></script>
+    <script src="../js/dashboard.js"></script>
+</body>
+
+</html>

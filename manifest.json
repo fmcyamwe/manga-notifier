@@ -1,0 +1,64 @@
+{
+    "author": "Flogical",
+    "version": "1.4",
+    "background": {
+        "service_worker": "content_scripts/background.js",
+        "type": "module"
+    },
+    "manifest_version": 3,
+    "name": "Manga Notifieraaa",
+    "action": {
+        "default_popup": "popup/choose_interval.html",
+        "default_icon": {
+            "48": "icons/manga-48.png"
+        },
+        "default_title": "Manga Notifierzz"
+    },
+    "content_scripts": [{
+        "matches": [
+            "<all_urls>"
+        ],
+        "js": [
+            "content_scripts/manga.js"
+        ]
+    }],
+    "description": "Notifies you when a new manga is released.",
+    "homepage_url": "https://github.com/Nischay-Pro/manga-notifier",
+    "icons": {
+        "48": "icons/manga-48.png",
+        "96": "icons/manga-96.png"
+    },
+    "options_page": "options/options.html",
+    "permissions": [
+        "unlimitedStorage",
+        "notifications",
+        "storage",
+        "webRequest",
+        "activeTab",
+        "tabs"
+    ],
+    "host_permissions": [
+        "https://mangafox.la/",
+        "https://readms.net/",
+        "https://mangastream.com/",
+        "https://mangakakalot.com/"
+    ],
+    "optional_host_permissions": [
+        "*://*/*"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "options/options.html",
+                "icons/manga-48.png",
+                "icons/manga-96.png",
+                "content_scripts/manga.js"
+            ],
+            "matches": [
+                "*://*/*"
+            ]
+
+        }
+       
+    ]
+}
