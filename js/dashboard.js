@@ -12,10 +12,17 @@ function saveOptions(e) {
 }
 
 function restoreOptions() {
-
+  console.log("DOMContentLoaded");
   function setCurrentChoice(result) {
-    // console.log(result);
-    document.getElementById('interval').value = result.data.frequency || 1;
+    console.log(result);
+    if (result !== undefined && result.data !== undefined){
+      console.log("bon result GOOD", result);
+      document.getElementById('interval').value = result.data.frequency;
+    } else {
+      console.log("bon result BAAD", result);
+      document.getElementById('interval').value = 1
+    }
+    //document.getElementById('interval').value = result.data.frequency || 1;
     $("#interval").val(result.data.frequency || 1).trigger('change');
     document.getElementById('frequencynot').innerText = "Current Frequency for checking: " + (result.data.frequency || 1) + " hour(s)";
     $('#chips').material_chip({

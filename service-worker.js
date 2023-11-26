@@ -1,3 +1,31 @@
+// When you specify "type": "module" in the manifest background,
+// you can include the service worker as an ES Module,as
+//importScripts('./options/jobby'); //not supported
+import { jobUrls } from './options/jobby.js';
+
+
+// Add a listener to create the initial context menu items,
+// context menu items only need to be created at runtime.onInstalled
+chrome.runtime.onInstalled.addListener(async () => {
+  for (const [name, url] of Object.entries(jobUrls)) {
+    chrome.contextMenus.create({
+      id: url, //should switch this out**TODO
+      title: name,
+      type: 'normal',
+      contexts: ['selection']
+    });
+  }
+});
+
+// Open a new search tab when the user clicks a context menu
+chrome.contextMenus.onClicked.addListener((item, tab) => {
+  const tld = item.menuItemId; //hopefully...
+  const url = new URL(`${tld}${item.selectionText}/`);//new URL(`https://google.${tld}/search`);
+  //url.searchParams.set('q', item.selectionText);
+  //console.log("da URL be:", url)
+  chrome.tabs.create({ url: url.href, index: tab.index + 1 });
+});
+
 var nIntervId = 0;
 var currFreq = 1;
 var running = 0;
@@ -36,7 +64,7 @@ function bgLoop(message) {
 }
 
 function refresh() {
-  // console.log("refresh called.");
+  console.log("refresh called.");
   var getting = chrome.storage.local.get("data");
   getting.then(function (res) {
     // console.log(res);
@@ -44,15 +72,137 @@ function refresh() {
 
     if (res.data.frequency == currFreq) {
       var links = res.data.mangaTags;
-      getContent(links, 0);
+      //getContent(links, 0);
+      
+      fetchContent(links, 0);//...no await i guess? 
     } else {
-      // console.log("Freq changed.");
+       console.log("Freq changed.");
       currFreq = res.data.frequency;
       clearInterval(nIntervId); // clear currently running interval
       running = 0; // needed so that bgLoop restarts properly
       bgLoop({}); // call bgloop in order to restart the loop with new freq
     }
   });
+}
+
+async function fetchContent(links, ind) {
+  try{
+    var url = links[ind].tag;
+    console.log("URL: " + url);
+
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`Err! status:${response.status}`)
+    }
+    const result = await response.json();
+    console.log("json result be", result);
+    const anotherResult = await response.text(); //what about using response.text ?!?toTEST**
+    console.log("text result be", anotherResult);
+
+    //FROM HERE---REVIEW and bring up to date***TODO
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(anotherResult, "text/html"); //this.responseText
+
+    var latestTitle = "";
+    var latestUrl = "";
+    if (/mangafox/i.test(url)) {
+      // Mangafox link. Parse accordingly
+
+      try {
+        var titles = doc.getElementsByClassName("tips");
+        latestTitle = titles[0];
+        latestUrl = mangafox_base_url + latestTitle.pathname;
+      // console.log("URL: " + mangafox_base_url + latestTitle.pathname);
+      } catch (e) {
+        // error in parsing implies either malformed url
+        // or wrong response due to bad internet
+
+        latestTitle = void 0; // so that it doesn't trigger the notifications or check block
+
+        if(e instanceof TypeError){
+          console.log("TypeError: Please check if the url is valid. If the url is working, it could be an internet issue.");
+          console.log("Error thrown with URL: " + url);
+        } else {
+          console.log(e);
+        }
+      }
+
+    } else if (/mangastream/i.test(url) || /readms/i.test(url)) {
+      // Mangastream url. Parse accordingly
+      try {
+        var rows = doc.getElementsByTagName('tr'); // Collection of rows
+        var r0 = rows[1]; // Start with 1 because row[0] is the header of the table i.e. 'Chapter' and 'Released'
+        // console.log(r0);
+        var child0 = r0.children[0]; // First <td> in the <tr>, i.e. Name of Chapter
+        // console.log(child0);
+        // console.log("Chapter Name: " + child0.innerText); // Chapter Name
+        latestTitle = child0;
+
+        var link0 = child0.firstChild; // <a href>
+        latestUrl = mangastream_base_url + link0.pathname;
+        // console.log(link0);
+        // console.log("Path: " + link0.pathname);
+        // console.log("Link: " + mangastream_base_url + link0.pathname); // URL to chapter
+      } catch (e) {
+        latestTitle = void 0; // so that it doesn't trigger the notifications or check block
+
+        if(e instanceof TypeError){
+          console.log("TypeError: Please check if the url is valid. If the url is working, it could be an internet issue.");
+          console.log("Error thrown with URL: " + url);
+        } else {
+          console.log(e);
+        }
+      }
+    }
+
+    if (latestTitle !== void 0) {
+      // chapters exist. test if notif needed
+      var lastSeen = chrome.storage.local.get(url);
+      lastSeen.then(function (res) {
+        if (res[url] !== void 0) {
+          // value exists
+          if (res[url] !== latestTitle.innerText) {
+            //something new. Notify user.
+            //innerText could be trimmed to remove chapter number
+            notify({
+              type: "basic",
+              title: latestTitle.innerText,
+              url: latestUrl,
+              content: "New content uploaded."
+            });
+            // modify last seen chapter
+            var obj = {};
+            obj[url] = latestTitle.innerText;
+            chrome.storage.local.set(obj);
+          }
+          // else {
+          //   // No new chapters case. Can be used to test features while debugging. Should be commented out in release versions.
+          //   // console.log("No new chapters for " + latestUrl);
+          //   // to test the notifs
+          //   notify({
+          //     type: "basic",
+          //     title: latestTitle.innerText,
+          //     url: latestUrl,
+          //     content: "No new content."
+          //   });
+          // }
+        } else {
+          // add value
+          var obj = {};
+          obj[url] = latestTitle.innerText;
+          chrome.storage.local.set(obj);
+        }
+      });
+    }
+    if (links[ind + 1] !== void 0) {
+      await fetchContent(links, ind + 1); //recursion!! neat
+    }
+
+  } catch(err) {
+    console.log("ERROR in fetch...:(")
+    console.log(err);
+  }
 }
 
 function getContent(links, ind) {

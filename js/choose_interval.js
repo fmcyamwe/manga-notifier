@@ -156,9 +156,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	});
 });
 var manifest = chrome.runtime.getManifest() || chrome.runtime.getManifest(); //browser
-console.log("da manifest?", manifest)
+//console.log("da manifest?", manifest.version)
 if(document.getElementById("test")) {
-	document.getElementById("test").innerHTML = 'Manga Notifier <h6>v' ;//+ manifest.version;
+	document.getElementById("test").innerHTML = 'Manga Notifier <h6>v' + manifest.version;
 }else {
 	console.log("ERROR:no test id")
 }

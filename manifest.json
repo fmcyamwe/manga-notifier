@@ -2,7 +2,7 @@
     "author": "Flogical",
     "version": "1.4",
     "background": {
-        "service_worker": "content_scripts/background.js",
+        "service_worker": "service-worker.js",
         "type": "module"
     },
     "manifest_version": 3,
@@ -35,7 +35,8 @@
         "storage",
         "webRequest",
         "activeTab",
-        "tabs"
+        "tabs",
+        "contextMenus"
     ],
     "host_permissions": [
         "https://mangafox.la/",
