@@ -2,6 +2,10 @@
 // you can include the service worker as an ES Module,as
 //importScripts('./options/jobby'); //not supported
 import { jobUrls } from './options/jobby.js';
+import { DOMParser } from "https://code4fukui.github.io/xmldom-es/xmldom.js"; //>>this works!!
+//"./xmldom";// node_modules/xmldom";
+//'./libs/xmldom/index.js';
+//'./libs/node_modules/@xmldom/xmldom';
 
 
 // Add a listener to create the initial context menu items,
@@ -50,38 +54,147 @@ function notifClicked(notifId) {
 }
 
 function bgLoop(message) {
+  console.log("in bgLoop with message==", message)
+  if (message?.message =='ohHello'){
+    //refresh();
+    fetchManga()
+    return //just to not trigger running...toReview why use that again?!?
+  }
 
   if (running == 0) {
     // console.log("running bgLoop");
     running = 1;
     refresh();
-    nIntervId = setInterval(refresh, currFreq * 3600 * 1000); // 10 * 1 * 1000
+    nIntervId = setInterval(refresh, 5 * 60 * 1000 ); //currFreq * 3600 * 1000 // 10 * 1 * 1000
+  } else{
+     console.log("running = " + running + ". Not running bgLoop");
   }
-  // else{
-  //   console.log("running = " + running + ". Not running bgLoop");
-  // }
 
+}
+
+async function fetchManga() {
+  try {
+    //retrieve all chapters from storage!
+    //put the titles in a map!
+
+    const response = await fetch("https://mangakakalot.com/")
+
+    if (!response.ok) {
+      throw new Error(`Err! status:${response.status}`)
+    }
+
+    let anotherResult = await response.text();
+    //console.log("fetchManga text be",anotherResult);
+    
+    let regexp = /~<(?!\/)/g; //so whatever is ~< but without the '/' afterwards...under the 'slide' class
+
+    //let matchAll = anotherResult.match(regexp) //better to use match smh
+
+    //umm not even needed it seems as can just continue...beware of potential future issues though(i.e:removing proper stuff)***
+    let pageHtml = anotherResult.replace(regexp, "-" )
+   
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(pageHtml, "text/html"); //this.responseText
+
+    const getTagElts = (nodes, tagName) => {
+      let arr = [] //in case of multiple nodes
+      for (let i = 0; i < nodes.length; i++){
+        if (nodes[i].tagName && nodes[i].tagName == tagName){
+          arr.push(nodes[i])
+          //return nodes[i]
+        }
+      }
+      return arr
+    }
+
+    const getTitle = (nodes, tagName) => {
+      for (let i = 0; i < nodes.length; i++){
+        if (nodes[i].tagName && nodes[i].tagName == tagName){
+          return nodes[i]
+        }
+      }
+    }
+
+    try {
+      var chapters = doc.getElementsByClassName("itemupdate first"); //sts sts_1
+      console.log("there be",chapters.length)
+
+      //let aFilter = chapters[0].childNodes.filter(c => c.nodeType == 1) //for Element...dont work smh
+
+       //so check if title in map of stored map if follow
+      // if follow > hash to see if have seen latest chapter 
+      // when not seen > save chapter and make notification with chapter link!
+      
+      for (let i = 0; i < chapters.length; i++) {
+        let children = chapters[i].childNodes
+        console.log("da node be:"+i, chapters[i]);
+        let ul = getTagElts(children, "ul")
+        if (ul.length > 0){
+          //should be only one
+          let li = getTagElts(ul[0].childNodes, "li")
+          let title = li[0].textContent.trim()
+          
+          for (let j = 1; j < li.length; j++){
+            console.log("li content: ", li[j])
+          }
+          
+          //so check if in map
+
+        } else {
+          console.log("Not enough chapters...skipping!", ul)
+        }
+
+        //for (let i = 0; i < children.length; i++) {
+        //  console.log("childy as:"+i, children[i].tagName) //so no innerText or textContent smh
+          //tagName on Elements 
+          //data || nodeValue on Text 
+          //==ul then go down smh
+        //}
+
+      }
+
+    } catch (e){
+      if(e instanceof TypeError){
+        console.log("Error getting classElements");
+        console.log(e);
+      } else {
+        console.log("Weird Error getting classElements");
+        console.log(e);
+      }
+    }
+
+  }catch (err){
+    console.log("ERROR in fetch...:(")
+    console.log(err);
+  }
 }
 
 function refresh() {
   console.log("refresh called.");
   var getting = chrome.storage.local.get("data");
+  
   getting.then(function (res) {
     // console.log(res);
     // Check if freq is the same. Else clear and restart.
+    if (res && res.data && res.data.frequency){
 
-    if (res.data.frequency == currFreq) {
-      var links = res.data.mangaTags;
-      //getContent(links, 0);
-      
-      fetchContent(links, 0);//...no await i guess? 
-    } else {
-       console.log("Freq changed.");
-      currFreq = res.data.frequency;
-      clearInterval(nIntervId); // clear currently running interval
-      running = 0; // needed so that bgLoop restarts properly
-      bgLoop({}); // call bgloop in order to restart the loop with new freq
+      if (res.data.frequency == currFreq) {
+        var links = res.data.mangaTags;
+        //getContent(links, 0);
+        
+        fetchContent(links, 0);//...no await i guess? 
+      } else {
+        console.log("Freq changed.");
+        currFreq = res.data.frequency;
+        clearInterval(nIntervId); // clear currently running interval
+        running = 0; // needed so that bgLoop restarts properly
+        bgLoop({}); // call bgloop in order to restart the loop with new freq
+      }
+
+    }else{
+      console.log("In Refresh...nothing in storage!!");
     }
+
   });
 }
 
@@ -95,12 +208,14 @@ async function fetchContent(links, ind) {
     if (!response.ok) {
       throw new Error(`Err! status:${response.status}`)
     }
-    const result = await response.json();
-    console.log("json result be", result);
-    const anotherResult = await response.text(); //what about using response.text ?!?toTEST**
-    console.log("text result be", anotherResult);
 
-    //FROM HERE---REVIEW and bring up to date***TODO
+    //const anotherResult = await response.text(); //what about using response.text ?!?toTEST**
+   
+    let anotherResult = await response.text();
+    console.log("text be",anotherResult);
+
+    //regex out? >> ~< BUT not those with ~</ (or remove whatever is under the 'slide' class smh)
+
     var parser = new DOMParser();
     var doc = parser.parseFromString(anotherResult, "text/html"); //this.responseText
 
@@ -154,6 +269,8 @@ async function fetchContent(links, ind) {
           console.log(e);
         }
       }
+    } else if (/chapmanganato/i.test(url)){
+      console.log("YEEEE fetchContent a chapmanganato from kakalot!" + url);
     }
 
     if (latestTitle !== void 0) {
@@ -267,6 +384,8 @@ function getContent(links, ind) {
             console.log(e);
           }
         }
+      } else if (/chapmanganato/i.test(url)){
+        console.log("YEEEE a chapmanganato,...in here though?!?" + url);
       }
 
       if (latestTitle !== void 0) {
@@ -309,7 +428,8 @@ function getContent(links, ind) {
         });
       }
       if (links[ind + 1] !== void 0) {
-        getContent(links, ind + 1);
+        //getContent(links, ind + 1);
+        fetchContent(links, ind + 1);
       }
     }
   };

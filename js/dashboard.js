@@ -14,24 +14,31 @@ function saveOptions(e) {
 function restoreOptions() {
   console.log("DOMContentLoaded");
   function setCurrentChoice(result) {
-    console.log(result);
-    if (result !== undefined && result.data !== undefined){
+    console.log("setCurrentChoice as:",result);
+    let freq
+
+    if (result && result.data && result.data.frequency){ //(result !== undefined && result.data.frequency !== undefined)
       console.log("bon result GOOD", result);
-      document.getElementById('interval').value = result.data.frequency;
+      freq = result.data.frequency;
+      //document.getElementById('interval').value = result.data.frequency;
+      //$("#interval").val(result.data.frequency).trigger('change'); //isnt this just redundant in order to trigger?!? TBD**
     } else {
       console.log("bon result BAAD", result);
-      document.getElementById('interval').value = 1
+      freq = 1;
+      //document.getElementById('interval').value = 1 ; 
+      //$("#interval").val(1).trigger('change'); //same concern as above...toSee**
     }
-    //document.getElementById('interval').value = result.data.frequency || 1;
-    $("#interval").val(result.data.frequency || 1).trigger('change');
-    document.getElementById('frequencynot').innerText = "Current Frequency for checking: " + (result.data.frequency || 1) + " hour(s)";
+    document.getElementById('interval').value = freq;
+    $("#interval").val(freq).trigger('change');
+    document.getElementById('frequencynot').innerText = "Current Frequency for checking: " + freq + " hour(s)";
+    
     $('#chips').material_chip({
       placeholder: 'Enter a tag',
       limit: Infinity,
       minLength: 1,
-      data: result.data.mangaTags
+      data: result?.data?.mangaTags ?? ''
     });
-    document.getElementById('debug').checked = result.data.debugMode;
+    document.getElementById('debug').checked = result?.data?.debugMode;
     // console.log(result.data.mangaTags);
   }
 
@@ -40,7 +47,8 @@ function restoreOptions() {
     Materialize.toast(`Error: ${error}`, 4000)
   }
 
-  var getting = chrome.storage.local.get("data",function (result){setCurrentChoice(result)}) || chrome.storage.local.get("data");
+  //var getting = chrome.storage.local.get("data",function (result){setCurrentChoice(result)}) || chrome.storage.local.get("data");
+  var getting = chrome.storage.local.get("data");
   getting.then(setCurrentChoice, onError);
 }
 

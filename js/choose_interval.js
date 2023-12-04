@@ -4,6 +4,21 @@ function openInNewTab() {
 	});
 }
 
+function doAcheck() {
+	//onMessage event will be fired in every frame of your extension...toSee**
+	chrome.runtime.sendMessage({
+		message: 'ohHello',
+		callback: (response) => {
+			console.log("well response be:", response)
+		}
+	});
+		//extensionId?: string,
+		//message: 'ohHello',
+		//options?: object,
+		//callback?: function,
+	  
+}
+
 function modifyUrl(add) {
 	//console.log("modify"+add);
 	//if add == false, remove
@@ -127,8 +142,9 @@ function updateAddMangaButton(isMangaAdded) {
 
 document.addEventListener('DOMContentLoaded', function () {
 	var settingsbutton = document.getElementById("settings-button");
-  // console.log(settingsbutton);
-  settingsbutton.addEventListener('click', openInNewTab);
+	var checkButton = document.getElementById("doCheck-button");
+	settingsbutton.addEventListener('click', openInNewTab);
+	checkButton.addEventListener('click', doAcheck);
 
 
   chrome.storage.local.get("data", function (data) {
@@ -156,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	});
 });
 var manifest = chrome.runtime.getManifest() || chrome.runtime.getManifest(); //browser
-//console.log("da manifest?", manifest.version)
+console.log("da manifest?", manifest.version)
 if(document.getElementById("test")) {
 	document.getElementById("test").innerHTML = 'Manga Notifier <h6>v' + manifest.version;
 }else {
