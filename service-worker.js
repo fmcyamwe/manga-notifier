@@ -30,6 +30,17 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
   chrome.tabs.create({ url: url.href, index: tab.index + 1 });
 });
 
+//just for testing saving...is it key issue?!? >>yup it was!
+/*chrome.storage.onChanged.addListener((changes, namespace) => { //bon no error with .local even
+  for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
+    console.log(
+      `Storage key "${key}" in namespace "${namespace}" changed.`,
+      `Old value was "${oldValue}", new value is "${newValue}".`
+    );
+  }
+});
+*/
+
 var nIntervId = 0;
 var currFreq = 1;
 var running = 0;
@@ -38,7 +49,7 @@ var mangafox_base_url = "http://mangafox.la";
 
 function notify(message) {
   var data = message;
-  // console.log(data.type + "," + data.title + "," + data.content);
+  console.log(data.type + "," + data.title + "::" +data.url+ ","+ data.content);
   var notif = chrome.notifications.create(data.url, {
     "type": data.type,
     "iconUrl": chrome.runtime.getURL("icons/manga-48.png"), //chrome.extension.getURL("icons/manga-48.png"),
@@ -57,7 +68,11 @@ function bgLoop(message) {
   console.log("in bgLoop with message==", message)
   if (message?.message =='ohHello'){
     //refresh();
-    fetchManga()
+    var getting = chrome.storage.local.get("data");
+    getting.then(fetchManga,function (error) {
+      console.log("Error retrieving from storage:",error);
+    });
+    //fetchManga()
     return //just to not trigger running...toReview why use that again?!?
   }
 
@@ -72,7 +87,50 @@ function bgLoop(message) {
 
 }
 
-async function fetchManga() {
+async function getSavedChapter(title) {
+  //console.log("getting::"+title)
+  return await chrome.storage.local.get(title);
+  /*try {
+    let getting = await(chrome.storage.local.get(title));
+    /*console.log("getSavedChapter"+title, getting); //prints? or have to .then here?!?
+    getting.then((euh) => {
+      console.log("getSavedThen", euh)
+      return euh; //unhashed?!?
+    })//*
+    return getting; //unhashed?!?
+  }catch (err){
+    console.log("ERROR nothing of: "+title, err);
+    return null
+  }*/
+}
+
+async function saveChapter(title, hashedString) {
+  var obj = {};
+  obj[title] = hashedString;      
+  //let e = 
+  await(chrome.storage.local.set(obj));//.set({title: hashedString})); >>this was wrong!
+  
+  //console.log("saving e::", e, obj)try to get it back?!?
+  //getSavedChapter(title).then(euh => {
+  //  console.log("From saving::"+title, euh)
+  //})
+}
+
+async function fetchManga(allMangas) {
+  
+  if (!allMangas.data.mangaTags){
+    console.log("ERROR no mangas to check", allMangas)
+    return 
+  }
+
+  var mangas = allMangas.data.mangaTags; //umm better to use map with key?
+  let links = {};
+  for(let i = 0; i < mangas.length; i++){
+    let t = mangas[i].tag; //sheesh remove tag
+    links[t] = true;
+  }
+  //console.log("all mangas:", links)
+
   try {
     //retrieve all chapters from storage!
     //put the titles in a map!
@@ -97,6 +155,8 @@ async function fetchManga() {
     var doc = parser.parseFromString(pageHtml, "text/html"); //this.responseText
 
     const getTagElts = (nodes, tagName) => {
+      //tagName on Elements 
+      //data || nodeValue on Text 
       let arr = [] //in case of multiple nodes
       for (let i = 0; i < nodes.length; i++){
         if (nodes[i].tagName && nodes[i].tagName == tagName){
@@ -122,34 +182,113 @@ async function fetchManga() {
       //let aFilter = chapters[0].childNodes.filter(c => c.nodeType == 1) //for Element...dont work smh
 
        //so check if title in map of stored map if follow
-      // if follow > hash to see if have seen latest chapter 
+      // if follow > hash to see if have seen latest chapter ( actually hash last three--in case missed some chapters)
       // when not seen > save chapter and make notification with chapter link!
       
       for (let i = 0; i < chapters.length; i++) {
         let children = chapters[i].childNodes
-        console.log("da node be:"+i, chapters[i]);
+        //console.log("da node be:"+i, chapters[i]);
         let ul = getTagElts(children, "ul")
         if (ul.length > 0){
-          //should be only one
-          let li = getTagElts(ul[0].childNodes, "li")
+          let li = getTagElts(ul[0].childNodes, "li") //should be only one and title is first one
           let title = li[0].textContent.trim()
-          
-          for (let j = 1; j < li.length; j++){
-            console.log("li content: ", li[j])
+          //console.log("mangas:", title)
+          if (title in links){
+            console.log("WOOO found!!", title)
+            var allChapters = {};
+            for (let j = 1; j < li.length; j++){ //skip first one as it's title
+              let span = getTagElts(li[j].childNodes, "span")
+              if (span.length > 0) {
+                //console.log("span content: ", span[0].textContent.trim())
+                //get latest chapter and link!
+                let aT = span[0].childNodes[0].attributes  //a tag and is only one
+                //console.log("attributes: ",aT)
+                let hr = aT.getNamedItem("href").value  //or nodeValue
+                let chapTitle = aT.getNamedItem("title").value
+                //console.log("parsed: "+chapTitle,hr)
+                allChapters[chapTitle] = hr
+              }
+            }
+            //should hash the last three as could be multi release!
+            console.log("allChapts:",allChapters)
+
+            var annon = []
+            for (let code in allChapters) { // keep order? should keep added order--hopefully!
+              //console.log(code +"::"+allChapters[code])
+              annon.push(code +"::"+allChapters[code])
+            }
+            let hashy = [].join.call(annon,":~:") //can use other delimiter than default comma >>YES for borrowing a method!
+            //console.log("then it was:", hashy)
+            //manga>chapt::url,chapt::url,chapt::url
+
+            //var oldie = chrome.storage.local.get(title);
+            getSavedChapter(title).then((svd) => {
+              if (!(Object.keys(svd).length > 0 && Object.values(svd).length > 0)){
+                saveChapter(title, hashy)
+                //.then() doesnt work with return but works for getSavedChapter above?!? toTest** more 
+                /////is it that returned value is a promise?!? toTry**
+                console.log(`${title} had nothing...saved`);
+                //then send notification for the last chapt
+                //to get last key which is the earliest chapter.
+                //let lkey = Object.keys(allChapters)[Object.keys(allChapters).length - 1]
+                //console.log("with stats :",lkey, allChapters[lkey])
+                let lkey = Object.keys(allChapters)[0]
+                notify({
+                  type: "basic",
+                  title: title,
+                  url: allChapters[lkey],
+                  content: `New ${lkey} uploaded for ${title}`
+                });
+                
+              }else {
+                //console.log("oouh keys as",Object.keys(euh));
+                //console.log("oouh values as",Object.values(euh));
+                //for (let [key, value] of Object.entries(svd)) {
+                //  console.log(`${key}:::${value}`);
+                //}
+    
+                let saved = svd[title]
+                if(saved) {
+                  //console.log("oouh saved:", saved)
+                  let c = saved.split(':~:')
+                  console.log("current saved", c, c.length)
+                  //let notiSent = false 
+                  var seen = []
+                  for(let i = 0; i < c.length; i++){
+                    let aChap = c[i].split('::')
+                    if (allChapters[aChap[0]]){ //so if chapt title in allChapters
+                      seen.push(aChap[0])
+                    }
+                  }
+                  //4,3,2 >>allChapters
+                  //3,2,1 >>saved
+                  //so should be one short....normally
+                  console.log("have seen",seen, seen.length) 
+                  let diff = Object.keys(allChapters).length - seen.length
+                  if ((c.length - seen.length) > 0 && diff > 0){//should be the same..toTest
+                    let lkey = Object.keys(allChapters)[Object.keys(allChapters).length - 1]
+                    notify({
+                      type: "basic",
+                      title: title,
+                      url: allChapters[lkey],
+                      content: `New ${lkey} uploaded for ${title}`
+                    });
+                    saveChapter(title, hashy)
+                  }
+                } else {
+                  console.log(`ERROR ${title} was empty?!?`) //shouldnt happen--toMonitor**
+                  saveChapter(title, hashy)
+                }
+                
+              }
+            }).catch( error => {
+              console.log("ERROR sigh",error)
+            })
           }
-          
-          //so check if in map
 
         } else {
           console.log("Not enough chapters...skipping!", ul)
         }
-
-        //for (let i = 0; i < children.length; i++) {
-        //  console.log("childy as:"+i, children[i].tagName) //so no innerText or textContent smh
-          //tagName on Elements 
-          //data || nodeValue on Text 
-          //==ul then go down smh
-        //}
 
       }
 
