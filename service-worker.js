@@ -44,24 +44,29 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
 var nIntervId = 0;
 var currFreq = 1;
 var running = 0;
-var mangastream_base_url = "http://readms.net/";
-var mangafox_base_url = "http://mangafox.la";
+//var mangastream_base_url = "http://readms.net/"; 
+//var mangafox_base_url = "http://mangafox.la";
+var mangakakalot_url = "https://mangakakalot.com/";
 
 function notify(message) {
   var data = message;
-  console.log(data.type + "," + data.title + "::" +data.url+ ","+ data.content);
-  var notif = chrome.notifications.create(data.url, {
+  
+  var notifId = chrome.notifications.create(data.url, {
     "type": data.type,
     "iconUrl": chrome.runtime.getURL("icons/manga-48.png"), //chrome.extension.getURL("icons/manga-48.png"),
     "title": data.title,
     "message": data.content
   });
+  console.log(data.type + "," + data.title + "::" +data.url+ ","+ data.content); 
+  //shoould prolly keep `notifId`?
 }
 
 function notifClicked(notifId) {
   var creating = chrome.tabs.create({
     url: notifId
   });
+  //clear notifId ? >>yup should!! todo**
+  console.log("clicked on notif", notifId)
 }
 
 function bgLoop(message) {
@@ -79,8 +84,9 @@ function bgLoop(message) {
   if (running == 0) {
     // console.log("running bgLoop");
     running = 1;
-    refresh();
-    nIntervId = setInterval(refresh, 5 * 60 * 1000 ); //currFreq * 3600 * 1000 // 10 * 1 * 1000
+    //refresh();
+    runRefreshCheck()
+    nIntervId = setInterval(runRefreshCheck, 5 * 60 * 1000 ); //currFreq * 3600 * 1000 // 10 * 1 * 1000
   } else{
      console.log("running = " + running + ". Not running bgLoop");
   }
@@ -109,13 +115,13 @@ async function saveChapter(title, hashedString) {
   obj[title] = hashedString;      
   //let e = 
   await(chrome.storage.local.set(obj));//.set({title: hashedString})); >>this was wrong!
-  
-  //console.log("saving e::", e, obj)try to get it back?!?
-  //getSavedChapter(title).then(euh => {
-  //  console.log("From saving::"+title, euh)
-  //})
 }
 
+/**
+ * check if title in map of stored map if follow
+ * if follow > hash to see if have seen latest chapter ( actually hash last three--in case missed some chapters)
+ * when not seen > save chapter and make notification with chapter link!
+ */
 async function fetchManga(allMangas) {
   
   if (!allMangas.data.mangaTags){
@@ -123,7 +129,7 @@ async function fetchManga(allMangas) {
     return 
   }
 
-  var mangas = allMangas.data.mangaTags; //umm better to use map with key?
+  var mangas = allMangas.data.mangaTags;
   let links = {};
   for(let i = 0; i < mangas.length; i++){
     let t = mangas[i].tag; //sheesh remove tag
@@ -132,13 +138,10 @@ async function fetchManga(allMangas) {
   //console.log("all mangas:", links)
 
   try {
-    //retrieve all chapters from storage!
-    //put the titles in a map!
-
-    const response = await fetch("https://mangakakalot.com/")
+    const response = await fetch(mangakakalot_url)
 
     if (!response.ok) {
-      throw new Error(`Err! status:${response.status}`)
+      throw new Error(`Errror querying kakalot! status:${response.status}`)
     }
 
     let anotherResult = await response.text();
@@ -167,30 +170,16 @@ async function fetchManga(allMangas) {
       return arr
     }
 
-    const getTitle = (nodes, tagName) => {
-      for (let i = 0; i < nodes.length; i++){
-        if (nodes[i].tagName && nodes[i].tagName == tagName){
-          return nodes[i]
-        }
-      }
-    }
-
     try {
       var chapters = doc.getElementsByClassName("itemupdate first"); //sts sts_1
       console.log("there be",chapters.length)
-
-      //let aFilter = chapters[0].childNodes.filter(c => c.nodeType == 1) //for Element...dont work smh
-
-       //so check if title in map of stored map if follow
-      // if follow > hash to see if have seen latest chapter ( actually hash last three--in case missed some chapters)
-      // when not seen > save chapter and make notification with chapter link!
       
       for (let i = 0; i < chapters.length; i++) {
         let children = chapters[i].childNodes
         //console.log("da node be:"+i, chapters[i]);
         let ul = getTagElts(children, "ul")
-        if (ul.length > 0){
-          let li = getTagElts(ul[0].childNodes, "li") //should be only one and title is first one
+        if (ul.length > 0){ //normally one ul 
+          let li = getTagElts(ul[0].childNodes, "li") //should be title as first one
           let title = li[0].textContent.trim()
           //console.log("mangas:", title)
           if (title in links){
@@ -200,34 +189,31 @@ async function fetchManga(allMangas) {
               let span = getTagElts(li[j].childNodes, "span")
               if (span.length > 0) {
                 //console.log("span content: ", span[0].textContent.trim())
-                //get latest chapter and link!
-                let aT = span[0].childNodes[0].attributes  //a tag and is only one
-                //console.log("attributes: ",aT)
+                
+                //get chapter and link!
+                let aT = span[0].childNodes[0].attributes  //a tag and should be only one
                 let hr = aT.getNamedItem("href").value  //or nodeValue
                 let chapTitle = aT.getNamedItem("title").value
-                //console.log("parsed: "+chapTitle,hr)
+
                 allChapters[chapTitle] = hr
               }
             }
-            //should hash the last three as could be multi release!
-            console.log("allChapts:",allChapters)
+            //console.log("allChapts:",allChapters)
 
+            //hash the last three as could be multi release and missed them
             var annon = []
             for (let code in allChapters) { // keep order? should keep added order--hopefully!
               //console.log(code +"::"+allChapters[code])
               annon.push(code +"::"+allChapters[code])
             }
             let hashy = [].join.call(annon,":~:") //can use other delimiter than default comma >>YES for borrowing a method!
-            //console.log("then it was:", hashy)
-            //manga>chapt::url,chapt::url,chapt::url
-
+            
             //var oldie = chrome.storage.local.get(title);
             getSavedChapter(title).then((svd) => {
               if (!(Object.keys(svd).length > 0 && Object.values(svd).length > 0)){
                 saveChapter(title, hashy)
-                //.then() doesnt work with return but works for getSavedChapter above?!? toTest** more 
-                /////is it that returned value is a promise?!? toTry**
-                console.log(`${title} had nothing...saved`);
+                
+                console.log(`${title} had no local entry...saving chapters`);
                 //then send notification for the last chapt
                 //to get last key which is the earliest chapter.
                 //let lkey = Object.keys(allChapters)[Object.keys(allChapters).length - 1]
@@ -262,8 +248,7 @@ async function fetchManga(allMangas) {
                   }
                   //4,3,2 >>allChapters
                   //3,2,1 >>saved
-                  //so should be one short....normally
-                  console.log("have seen",seen, seen.length) 
+                  //so seen should be one short....normally
                   let diff = Object.keys(allChapters).length - seen.length
                   if ((c.length - seen.length) > 0 && diff > 0){//should be the same..toTest
                     let lkey = Object.keys(allChapters)[Object.keys(allChapters).length - 1]
@@ -274,6 +259,8 @@ async function fetchManga(allMangas) {
                       content: `New ${lkey} uploaded for ${title}`
                     });
                     saveChapter(title, hashy)
+                  } else {
+                    console.log("**WARNING** have seen",seen, seen.length) //when doing check but nothing new...
                   }
                 } else {
                   console.log(`ERROR ${title} was empty?!?`) //shouldnt happen--toMonitor**
@@ -282,14 +269,13 @@ async function fetchManga(allMangas) {
                 
               }
             }).catch( error => {
-              console.log("ERROR sigh",error)
+              console.log("ERROR retrieving from local storage!!",error)
+              throw new Error(`Errror from local storage:${error}`) //just throw this as def serious!
             })
           }
-
         } else {
-          console.log("Not enough chapters...skipping!", ul)
+          console.log("Not enough chapters...skipping!", ul.textContent.trim())
         }
-
       }
 
     } catch (e){
@@ -297,18 +283,58 @@ async function fetchManga(allMangas) {
         console.log("Error getting classElements");
         console.log(e);
       } else {
-        console.log("Weird Error getting classElements");
-        console.log(e);
+        console.log("Weird Error",e);
+        throw new Error(`Weird error:${e}`) //just throw...hopefully caught below and notifies
+        //console.log(e);
       }
     }
 
   }catch (err){
     console.log("ERROR in fetch...:(")
     console.log(err);
+    //should def let me know if this happens!
+    notify({
+      type: "basic",
+      title: "Extension error",
+      url: '', //should go to extension?!?
+      content: `ERROR occured ${err}`
+    });
   }
 }
 
-function refresh() {
+function runRefreshCheck() {
+  console.log("Run check called.");
+  var getting = chrome.storage.local.get("data");
+  getting.then(function (res) {
+    // console.log(res);
+    // Check if freq is the same. Else clear and restart.
+    if (res && res.data && res.data.frequency){
+
+      if (res.data.frequency == currFreq) {
+        //var links = res.data.mangaTags;
+        //getContent(links, 0);
+        //fetchContent(links, 0);
+        fetchManga(res)
+      } else {
+        console.log("Freq changed.");
+        currFreq = res.data.frequency;
+        clearInterval(nIntervId); // clear currently running interval
+        running = 0; // needed so that bgLoop restarts properly
+        bgLoop({}); // call bgloop in order to restart the loop with new freq
+      }
+
+    }else{
+      console.log("Run check...nothing in storage!!");
+    }
+
+  });
+}
+
+//browser.runtime.onMessage.addListener(bgLoop);
+chrome.runtime.onMessage.addListener(bgLoop);
+chrome.notifications.onClicked.addListener(notifClicked);
+
+/*function refresh() { //replaced by runRefreshCheck--toRemove**
   console.log("refresh called.");
   var getting = chrome.storage.local.get("data");
   
@@ -575,7 +601,4 @@ function getContent(links, ind) {
   xhr.open("GET", url, true);
   xhr.send();
 }
-
-//browser.runtime.onMessage.addListener(bgLoop);
-chrome.runtime.onMessage.addListener(bgLoop);
-chrome.notifications.onClicked.addListener(notifClicked);
+*/
