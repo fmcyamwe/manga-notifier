@@ -8,6 +8,14 @@ import { DOMParser } from "https://code4fukui.github.io/xmldom-es/xmldom.js"; //
 //'./libs/node_modules/@xmldom/xmldom';
 
 
+var nIntervId = 0;
+var currFreq = 1;
+var running = 0;
+//var notifId;
+//var mangastream_base_url = "http://readms.net/"; 
+//var mangafox_base_url = "http://mangafox.la";
+var mangakakalot_url = "https://mangakakalot.com/";
+
 // Add a listener to create the initial context menu items,
 // context menu items only need to be created at runtime.onInstalled
 chrome.runtime.onInstalled.addListener(async () => {
@@ -41,32 +49,32 @@ chrome.contextMenus.onClicked.addListener((item, tab) => {
 });
 */
 
-var nIntervId = 0;
-var currFreq = 1;
-var running = 0;
-//var mangastream_base_url = "http://readms.net/"; 
-//var mangafox_base_url = "http://mangafox.la";
-var mangakakalot_url = "https://mangakakalot.com/";
-
 function notify(message) {
   var data = message;
   
-  var notifId = chrome.notifications.create(data.url, {
+  //notifId = 
+  chrome.notifications.create(data.url, {
     "type": data.type,
     "iconUrl": chrome.runtime.getURL("icons/manga-48.png"), //chrome.extension.getURL("icons/manga-48.png"),
     "title": data.title,
     "message": data.content
   });
-  console.log(data.type + "," + data.title + "::" +data.url+ ","+ data.content); 
-  //shoould prolly keep `notifId`?
+  //console.log(data.title + "::" +data.url+ ","+ data.content); 
+  //notifId.then((e) => {
+  //  console.log("after creating", e); //just to see
+  //});
 }
 
-function notifClicked(notifId) {
+function notifClicked(notifUrl) {
   var creating = chrome.tabs.create({
-    url: notifId
+    url: notifUrl
   });
-  //clear notifId ? >>yup should!! todo**
-  console.log("clicked on notif", notifId)
+  console.log("clicked on notif:", notifUrl); //notifUrl == notifId
+  //console.log(creating); 
+  //creating.then((e) => {
+  //  console.log("after clicking", e); //just to see
+  //});
+  chrome.notifications.clear(notifUrl); //clear notifId
 }
 
 function bgLoop(message) {
@@ -86,7 +94,8 @@ function bgLoop(message) {
     running = 1;
     //refresh();
     runRefreshCheck()
-    nIntervId = setInterval(runRefreshCheck, 5 * 60 * 1000 ); //currFreq * 3600 * 1000 // 10 * 1 * 1000
+    let interv = currFreq == 0 ? (0.5 * 3600 * 1000) : (currFreq * 3600 * 1000)
+    nIntervId = setInterval(runRefreshCheck, interv); //currFreq * 3600 * 1000 // 5 * 60 * 1000
   } else{
      console.log("running = " + running + ". Not running bgLoop");
   }
@@ -184,21 +193,21 @@ async function fetchManga(allMangas) {
           //console.log("mangas:", title)
           if (title in links){
             console.log("WOOO found!!", title)
-            var allChapters = {};
+            //var allChapters = {};
+            let allChapters = {}; //toSee if redeclaring gives prob...or move all this into another func?!? >>using let seems ok!
             for (let j = 1; j < li.length; j++){ //skip first one as it's title
               let span = getTagElts(li[j].childNodes, "span")
               if (span.length > 0) {
-                //console.log("span content: ", span[0].textContent.trim())
-                
                 //get chapter and link!
                 let aT = span[0].childNodes[0].attributes  //a tag and should be only one
                 let hr = aT.getNamedItem("href").value  //or nodeValue
                 let chapTitle = aT.getNamedItem("title").value
 
-                allChapters[chapTitle] = hr
+                //console.log("span content: ", span[0].textContent.trim(),chapTitle, hr)
+
+                allChapters[chapTitle] = hr ;
               }
             }
-            //console.log("allChapts:",allChapters)
 
             //hash the last three as could be multi release and missed them
             var annon = []
@@ -213,12 +222,13 @@ async function fetchManga(allMangas) {
               if (!(Object.keys(svd).length > 0 && Object.values(svd).length > 0)){
                 saveChapter(title, hashy)
                 
-                console.log(`${title} had no local entry...saving chapters`);
+                console.log(`${title} had no local entry...saving chapters`, hashy);
                 //then send notification for the last chapt
                 //to get last key which is the earliest chapter.
                 //let lkey = Object.keys(allChapters)[Object.keys(allChapters).length - 1]
                 //console.log("with stats :",lkey, allChapters[lkey])
-                let lkey = Object.keys(allChapters)[0]
+                var lkey = Object.keys(allChapters)[0]
+                //console.log("bout to notify with stats :",title, lkey, allChapters[lkey])
                 notify({
                   type: "basic",
                   title: title,
@@ -260,7 +270,7 @@ async function fetchManga(allMangas) {
                     });
                     saveChapter(title, hashy)
                   } else {
-                    console.log("**WARNING** have seen",seen, seen.length) //when doing check but nothing new...
+                    console.log(`**WARNING** for ${title} have seen`,seen, seen.length, Object.keys(allChapters).length) //when doing check but nothing new...
                   }
                 } else {
                   console.log(`ERROR ${title} was empty?!?`) //shouldnt happen--toMonitor**
@@ -296,7 +306,7 @@ async function fetchManga(allMangas) {
     notify({
       type: "basic",
       title: "Extension error",
-      url: '', //should go to extension?!?
+      url: '', //should go to extension?!? chrome://extensions/ **toTest
       content: `ERROR occured ${err}`
     });
   }
@@ -316,7 +326,7 @@ function runRefreshCheck() {
         //fetchContent(links, 0);
         fetchManga(res)
       } else {
-        console.log("Freq changed.");
+        console.log("Freq changed."+res.data.frequency);
         currFreq = res.data.frequency;
         clearInterval(nIntervId); // clear currently running interval
         running = 0; // needed so that bgLoop restarts properly

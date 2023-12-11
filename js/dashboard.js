@@ -1,24 +1,32 @@
 function saveOptions(e) {
   e.preventDefault();
+  let freq = $("#interval").children(":selected").attr("value")
   chrome.storage.local.set({
     data: {
-      frequency: $("#interval").children(":selected").attr("value"),
+      frequency: freq,
       mangaTags: $('#chips').material_chip('data'),
       debugMode: $('#debug').prop('checked')
     }
   });
-  document.getElementById('frequencynot').innerText = "Current Frequency for checking: " + $("#interval").children(":selected").attr("value") + " hour(s)";
+  //let texty = freq == "0" ? "30 minutes" : `${freq} hour(s)`
+  //document.getElementById('frequencynot').innerText = `Current Frequency for checking: ${texty}`;// + $("#interval").children(":selected").attr("value") + " hour(s)";
+  labeling(freq);
   Materialize.toast('Changes saved successfully!', 4000)
 }
 
+function labeling(freq) {
+  let texty = freq == "0" ? "30 minutes" : `${freq} hour(s)`
+  document.getElementById('frequencynot').innerText = `Current Frequency for checking: ${texty}`;// + $("#interval").children(":selected").attr("value") + " hour(s)";
+}
+
 function restoreOptions() {
-  console.log("DOMContentLoaded");
+  //console.log("DOMContentLoaded");
   function setCurrentChoice(result) {
     console.log("setCurrentChoice as:",result);
     let freq
 
     if (result && result.data && result.data.frequency){ //(result !== undefined && result.data.frequency !== undefined)
-      console.log("bon result GOOD", result);
+      //console.log("bon result GOOD", result);
       freq = result.data.frequency;
       //document.getElementById('interval').value = result.data.frequency;
       //$("#interval").val(result.data.frequency).trigger('change'); //isnt this just redundant in order to trigger?!? TBD**
@@ -30,7 +38,8 @@ function restoreOptions() {
     }
     document.getElementById('interval').value = freq;
     $("#interval").val(freq).trigger('change');
-    document.getElementById('frequencynot').innerText = "Current Frequency for checking: " + freq + " hour(s)";
+    //document.getElementById('frequencynot').innerText = "Current Frequency for checking: " + freq + " hour(s)";
+    labeling(freq)
     
     $('#chips').material_chip({
       placeholder: 'Enter a tag',
@@ -59,7 +68,6 @@ function formatState(state) {
   var $state = $(
     '<span>' + state.text + '</span>'
   );
-  // console.log(state.text);
   return $state;
 };
 $('.js-example-basic-single').select2({
