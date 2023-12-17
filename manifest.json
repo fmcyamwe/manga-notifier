@@ -6,13 +6,13 @@
         "type": "module"
     },
     "manifest_version": 3,
-    "name": "Manga Notifieraaa",
+    "name": "Manga Notifier",
     "action": {
         "default_popup": "popup/choose_interval.html",
         "default_icon": {
             "48": "icons/manga-48.png"
         },
-        "default_title": "Manga Notifierzz"
+        "default_title": "Manga Notifierzzz"
     },
     "content_scripts": [{
         "matches": [
@@ -23,7 +23,7 @@
         ]
     }],
     "description": "Notifies you when a new manga is released.",
-    "homepage_url": "https://github.com/Nischay-Pro/manga-notifier",
+    "homepage_url": "https://github.com/fmcyamwe/manga-notifier",
     "icons": {
         "48": "icons/manga-48.png",
         "96": "icons/manga-96.png"
@@ -39,9 +39,6 @@
         "contextMenus"
     ],
     "host_permissions": [
-        "https://mangafox.la/",
-        "https://readms.net/",
-        "https://mangastream.com/",
         "https://mangakakalot.com/"
     ],
     "optional_host_permissions": [

@@ -5,7 +5,6 @@ function onGot(item) {
     frequency = item.frequency;
   }
   // single call to start the sync loop
-  console.log("euh where?...bout to sendMessage:"+frequency)
   chrome.runtime.sendMessage({}); //browser
 }
 
@@ -13,5 +12,3 @@ var getting = chrome.storage.local.get("data"); //browser
 getting.then(onGot, function (error) {
   console.log(error);
 });
-
-console.log("euh where?!?")
