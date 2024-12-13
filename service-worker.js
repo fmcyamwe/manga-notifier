@@ -1,7 +1,7 @@
 // When you specify "type": "module" in the manifest background,
 // you can include the service worker as an ES Module,as
 //importScripts('./options/jobby'); //not supported
-import { jobUrls } from './options/jobby.js';
+//import { jobUrls } from './options/jobby.js';
 import { DOMParser } from "https://code4fukui.github.io/xmldom-es/xmldom.js"; //>>this works!!
 //"./xmldom";// node_modules/xmldom";
 //'./libs/xmldom/index.js';
@@ -15,7 +15,7 @@ var mangakakalot_url = "https://mangakakalot.com/";
 
 // Add a listener to create the initial context menu items,
 // context menu items only need to be created at runtime.onInstalled
-chrome.runtime.onInstalled.addListener(async () => {
+/*chrome.runtime.onInstalled.addListener(async () => {
   for (const [name, url] of Object.entries(jobUrls)) {
     chrome.contextMenus.create({
       id: url, //should switch this out**TODO
@@ -24,16 +24,16 @@ chrome.runtime.onInstalled.addListener(async () => {
       contexts: ['selection']
     });
   }
-});
+});*/
 
 // Open a new search tab when the user clicks a context menu
-chrome.contextMenus.onClicked.addListener((item, tab) => {
+/*chrome.contextMenus.onClicked.addListener((item, tab) => {
   const tld = item.menuItemId; //hopefully...
   const url = new URL(`${tld}${item.selectionText}/`);//new URL(`https://google.${tld}/search`);
   //url.searchParams.set('q', item.selectionText);
   //console.log("da URL be:", url)
   chrome.tabs.create({ url: url.href, index: tab.index + 1 });
-});
+});*/
 
 //just for testing saving...is it key issue?!? >>yup it was!
 /*chrome.storage.onChanged.addListener((changes, namespace) => { //bon no error with .local even
@@ -138,7 +138,6 @@ async function fetchManga(allMangas) {
     
     let regexp = /~<(?!\/)/g; //so whatever is ~< but without the '/' afterwards...under the 'slide' class
 
-    //let matchAll = anotherResult.match(regexp) //better to use match smh
 
     //umm not even needed it seems as can just continue...beware of potential future issues though(i.e:removing proper stuff)***
     let pageHtml = anotherResult.replace(regexp, "-" )
@@ -146,6 +145,9 @@ async function fetchManga(allMangas) {
     var parser = new DOMParser();
     var doc = parser.parseFromString(pageHtml, "text/html"); //this.responseText
 
+    //bon toFix ParseError above>>sometimes happes...
+    
+    
     const getTagElts = (nodes, tagName) => {
       //tagName on Elements 
       //data || nodeValue on Text 
@@ -171,6 +173,7 @@ async function fetchManga(allMangas) {
           let li = getTagElts(ul[0].childNodes, "li") //should be title as first one
           let title = li[0].textContent.trim()
           //console.log("mangas:", title)
+          //should lowerCase so that nothing is missed**TODO
           if (title in links){
             console.log("WOOO found!!", title)
             //var allChapters = {};
@@ -204,7 +207,7 @@ async function fetchManga(allMangas) {
                 
                 console.log(`${title} had no local entry...saving chapters`, hashy);
                 //then send notification for the last chapt
-                //to get last key which is the earliest chapter.
+                //to get first key which is the earliest chapter.
                 //let lkey = Object.keys(allChapters)[Object.keys(allChapters).length - 1]
                 //console.log("with stats :",lkey, allChapters[lkey])
                 var lkey = Object.keys(allChapters)[0]
@@ -241,7 +244,7 @@ async function fetchManga(allMangas) {
                   //so seen should be one short....normally
                   let diff = Object.keys(allChapters).length - seen.length
                   if ((c.length - seen.length) > 0 && diff > 0){//should be the same..toTest
-                    let lkey = Object.keys(allChapters)[Object.keys(allChapters).length - 1]
+                    let lkey = Object.keys(allChapters)[0] //[Object.keys(allChapters).length - 1]  >>this prolly what caused showing earliest chapter instead of latest...toMonitor**
                     notify({
                       type: "basic",
                       title: title,
@@ -279,7 +282,7 @@ async function fetchManga(allMangas) {
       }
     }
 
-  }catch (err){
+  } catch (err){
     console.log("ERROR in fetch...:(")
     console.log(err);
     //should def let me know if this happens!
