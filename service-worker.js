@@ -11,7 +11,7 @@ import { DOMParser } from "https://code4fukui.github.io/xmldom-es/xmldom.js"; //
 var nIntervId = 0;
 var currFreq = 1;
 var running = 0;
-var mangakakalot_url = "https://mangakakalot.com/";
+var mangakakalot_url = "https://www.mangakakalot.gg/";  //can also use: https://www.natomanga.com/
 
 // Add a listener to create the initial context menu items,
 // context menu items only need to be created at runtime.onInstalled
@@ -73,8 +73,11 @@ function bgLoop(message) {
   console.log("in bgLoop with message==", message)
   if (message?.message =='ohHello'){
     //refresh();
-    var getting = chrome.storage.local.get("data");
+    var getting = chrome.storage.local.get("data"); 
     getting.then(fetchManga,function (error) {
+      ////huh when extension gets removed and reloaded, the saved data gets erased--makes sense smh!!! 
+      ///// lost all the mangas title saved :(
+      ////toImprove** load some local file?
       console.log("Error retrieving from storage:",error);
     });
     //fetchManga()
